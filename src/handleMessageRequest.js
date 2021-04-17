@@ -4,7 +4,13 @@ var utils = require("../utils");
 var log = require("npmlog");
 
 module.exports = function(defaultFuncs, api, ctx) {
-  return function deleteThread(threadOrThreads, callback) {
+  return function handleMessageRequest(threadID, accept, callback) {
+    if (utils.getType(accept) !== "Boolean") {
+      throw {
+        error: "Please pass a boolean as a second argument."
+      };
+    }
+
     if (!callback) {
       callback = function() {};
     }
@@ -13,17 +19,19 @@ module.exports = function(defaultFuncs, api, ctx) {
       client: "mercury"
     };
 
-    if (utils.getType(threadOrThreads) !== "Array") {
-      threadOrThreads = [threadOrThreads];
+    if (utils.getType(threadID) !== "Array") {
+      threadID = [threadID];
     }
 
-    for (var i = 0; i < threadOrThreads.length; i++) {
-      form["ids[" + i + "]"] = threadOrThreads[i];
+    var messageBox = accept ? "inbox" : "other";
+
+    for (var i = 0; i < threadID.length; i++) {
+      form[messageBox + "[" + i + "]"] = threadID[i];
     }
 
     defaultFuncs
       .post(
-        "https://www.facebook.com/ajax/mercury/delete_thread.php",
+        "https://www.facebook.com/ajax/mercury/move_thread.php",
         ctx.jar,
         form
       )
@@ -36,7 +44,7 @@ module.exports = function(defaultFuncs, api, ctx) {
         return callback();
       })
       .catch(function(err) {
-        log.error("deleteThread", err);
+        log.error("handleMessageRequest", err);
         return callback(err);
       });
   };
